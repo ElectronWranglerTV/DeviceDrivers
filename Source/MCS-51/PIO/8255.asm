@@ -1,0 +1,149 @@
+;* Yggdrasil (TM) Core Operating System (MCS-51): 8255 PIO Driver
+;* Copyright (C) DeRemee Systems, IXE Electronics LLC
+;* Portions copyright IXE Electronics LLC, Republic Robotics, FemtoLaunch, FemtoSat, FemtoTrack, Weland
+;* This work is made available under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+;* To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
+
+#include "8255.inc"
+
+PUBLIC	PIO8255CTRLRD,	PIO8255CTRLWR,	PIO8255DATARD,	PIO8255DATAWR
+
+DEVICE_8255		SEGMENT		CODE
+RSEG DEVICE_8255
+
+;READ FROM 8255 CONTROL PORT
+;ON ENTRY:
+; DPTR  = 8255 BASE ADDRESS
+;ON RETURN:
+; DPTR  = VALUE ON ENTRY
+; C = 0 IF SUCCESS
+;   A = DATA
+; C = 1 IF FAIL
+;   A = ERROR CODE
+PIO8255CTRLRD	PROC
+  ;SAVE REGISTERS
+  PUSH  DPL
+  PUSH  DPH
+  ;CALCULATE ADDRESS OF PORT'S REGISTER
+  XCH   A, DPL
+  ADD   A, #PIO_8255_REGISTER_CONTROL
+  XCH   A, DPL
+  XCH   A, DPH
+  ADDC  A, #0x00
+  XCH   A, DPH
+  ;READ FROM PORT
+  MOVX  A, @DPTR
+  ;RESTORE REGISTERS & RETURN
+  POP   DPH
+  POP   DPL
+  CLR   C
+  RET
+ENDP
+
+
+;WRITE TO 8255 CONTROL PORT
+;ON ENTRY:
+; A     = DATA
+; DPTR  = 8255 BASE ADDRESS
+;ON RETURN:
+; DPTR  = VALUE ON ENTRY
+; C     = 0 IF SUCCESS
+;   A = 0x00
+; C     = 1 IF FAIL
+;   A = ERROR CODE
+PIO8255CTRLWR	PROC
+  ;SAVE REGISTERS
+  PUSH  DPL
+  PUSH  DPH
+  ;CALCULATE ADDRESS OF PORT'S REGISTER
+  XCH   A, DPL
+  ADD   A, #PIO_8255_REGISTER_CONTROL
+  XCH   A, DPL
+  XCH   A, DPH
+  ADDC  A, #0x00
+  XCH   A, DPH
+  ;WRITE TO PORT
+  MOVX  @DPTR, A
+  ;RESTORE REGISTERS & RETURN
+  POP   DPH
+  POP   DPL
+  CLR   C
+  RET
+ENDP
+
+
+;READ FROM 8255 DATA PORT
+;ON ENTRY:
+; R0    = PORT NUMBER
+; DPTR  = 8255 BASE ADDRESS
+;ON RETURN:
+; R0    = VALUE ON ENTRY
+; DPTR  = VALUE ON ENTRY
+; C     = 0 IF SUCCESS
+;   A = 0x00
+; C     = 1 IF FAIL
+;   A = ERROR CODE
+PIO8255DATARD	PROC
+    MOV   A, #0x02
+    CLR   C
+    SUBB  A, R0
+    JC    PIO8255DATARDA
+    ;CALCULATE ADDRESS OF PORT'S REGISTER
+    PUSH  DPL
+    PUSH  DPH
+    XCH   A, DPL
+    ADD   A, R0
+    XCH   A, DPL
+    XCH   A, DPH
+    ADDC  A, #0x00
+    XCH   A, DPH
+    ;READ FROM PORT
+    MOVX  A, @DPTR
+    ;RESTORE REGISTERS & RETURN
+    POP   DPH
+    POP   DPL
+    CLR   C
+  PIO8255DATARDA:
+    RET
+ENDP
+
+
+;WRITE TO 8255 DATA PORT
+;ON ENTRY:
+; A     = DATA
+; R0    = PORT NUMBER
+; DPTR  = 8255 BASE ADDRESS
+;ON RETURN:
+; R0    = VALUE ON ENTRY
+; DPTR  = VLAUE ON ENTRY
+; C     = 0 IF SUCCESS
+;   A = 0x00
+; C     = 1 IF FAIL
+;   A = ERROR CODE
+PIO8255DATAWR	PROC
+    PUSH  ACC
+    MOV   A, #0x02
+    CLR   C
+    SUBB  A, R0
+    POP   ACC
+    JNC   PIO8255DATAWRA
+  PIO8255DATAWRA:
+    ;CALCULATE ADDRESS OF PORT'S REGISTER
+    PUSH  DPL
+    PUSH  DPH
+    XCH   A, DPL
+    ADD   A, R0
+    XCH   A, DPL
+    XCH   A, DPH
+    ADDC  A, #0x00
+    XCH   A, DPH
+    ;WRITE TO PORT
+    MOVX  @DPTR, A
+    ;RESTORE REGISTERS & RETURN
+    POP   DPH
+    POP   DPL
+    CLR   C
+    RET
+ENDP
+
+END
